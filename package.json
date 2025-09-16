@@ -1,0 +1,26 @@
+{
+  "name": "wlo-mcp-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/run-demo.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/stdio.js",
+    "demo": "tsx src/run-demo.ts",
+    "stdio": "tsx src/stdio.ts"
+  },
+  "dependencies": {
+    "axios": "latest",
+    "zod": "latest",
+    "dotenv": "latest",
+    "@modelcontextprotocol/sdk": "latest"
+  },
+  "devDependencies": {
+    "typescript": "latest",
+    "ts-node": "latest",
+    "ts-node-dev": "latest",
+    "@types/node": "latest",
+    "tsx": "latest"
+  }
+}

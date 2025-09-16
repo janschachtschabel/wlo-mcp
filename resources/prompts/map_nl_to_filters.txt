@@ -1,0 +1,29 @@
+Titel: map_nl_to_filters
+
+Aufgabe: Lies Nutzertext und befülle die Parameter für search_content so restriktiv wie möglich. Nutze ausschließlich Werte aus resource://filters/*. Wenn ein Wert unbekannt ist, lass das Feld weg statt zu raten.
+
+Hinweise:
+- Verwende exakte deutsche Labels aus den Resources (subjects.json, educational_contexts.json, media_types.json).
+- Mapping der Felder:
+  - q -> ngsearchword
+  - subject (Label) -> virtual:taxonid (URI)
+  - educational_context (Label) -> ccm:educationalcontext (URI)
+  - media_type (Label) -> ccm:oeh_lrt_aggregated (URI)
+  - source (freier Text) -> ccm:oeh_publisher_combined
+ - Setze den Parameter 'source' nur, wenn die Quelle vom Nutzer explizit verlangt wird (z. B. "nur Klexikon", "Quelle: Klexikon", "von Klexikon").
+- Paginierung: page (ab 1), per_page (1..100). content_type: FILES|FOLDERS.
+
+Beispiele:
+- "Mathe 5. Klasse offene Lizenz PDF" -> {
+    subject: "Mathematik",
+    educational_context: "Sekundarstufe I",
+    media_type: "Arbeitsblatt"
+    // Lizenz nur setzen, wenn explizit und eindeutig benennbar (z. B. "CC-BY").
+  }
+- "Arbeitsblatt Bruchrechnung Sek I von Klexikon" -> {
+    q: "Bruchrechnung",
+    subject: "Mathematik",
+    educational_context: "Sekundarstufe I",
+    media_type: "Arbeitsblatt",
+    source: "Klexikon"
+  }

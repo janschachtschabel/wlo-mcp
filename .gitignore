@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+*.tsbuildinfo
+
+# Environment variables (never commit secrets)
+.env
+.env.local
+.env.*.local
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# OS/Editor junk
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Vercel local state (keep vercel.json in repo)
+.vercel/
+
+# Test/coverage (if used)
+coverage/
+
+# Caches & temp
+.cache/
+tmp/
+temp/
+*.tmp

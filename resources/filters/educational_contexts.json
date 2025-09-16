@@ -1,0 +1,13 @@
+{
+  "Elementarbereich": "http://w3id.org/openeduhub/vocabs/educationalContext/elementarbereich",
+  "Primarstufe": "http://w3id.org/openeduhub/vocabs/educationalContext/grundschule",
+  "Sekundarstufe I": "http://w3id.org/openeduhub/vocabs/educationalContext/sekundarstufe_1",
+  "Sekundarstufe II": "http://w3id.org/openeduhub/vocabs/educationalContext/sekundarstufe_2",
+  "Hochschule": "http://w3id.org/openeduhub/vocabs/educationalContext/hochschule",
+  "Berufliche Bildung": "http://w3id.org/openeduhub/vocabs/educationalContext/berufliche_bildung",
+  "Fortbildung": "http://w3id.org/openeduhub/vocabs/educationalContext/fortbildung",
+  "Erwachsenenbildung": "http://w3id.org/openeduhub/vocabs/educationalContext/erwachsenenbildung",
+  "Förderschule": "http://w3id.org/openeduhub/vocabs/educationalContext/foerderschule",
+  "Fernunterricht": "http://w3id.org/openeduhub/vocabs/educationalContext/fernunterricht",
+  "Alle": "http://w3id.org/openeduhub/vocabs/educationalContext/alle"
+}

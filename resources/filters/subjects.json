@@ -1,0 +1,17 @@
+{
+  "Allgemein": "http://w3id.org/openeduhub/vocabs/discipline/720",
+  "Biologie": "http://w3id.org/openeduhub/vocabs/discipline/080",
+  "Chemie": "http://w3id.org/openeduhub/vocabs/discipline/100",
+  "Deutsch": "http://w3id.org/openeduhub/vocabs/discipline/120",
+  "Englisch": "http://w3id.org/openeduhub/vocabs/discipline/20001",
+  "Französisch": "http://w3id.org/openeduhub/vocabs/discipline/20002",
+  "Geografie": "http://w3id.org/openeduhub/vocabs/discipline/220",
+  "Geschichte": "http://w3id.org/openeduhub/vocabs/discipline/240",
+  "Informatik": "http://w3id.org/openeduhub/vocabs/discipline/320",
+  "Kunst": "http://w3id.org/openeduhub/vocabs/discipline/060",
+  "Mathematik": "http://w3id.org/openeduhub/vocabs/discipline/380",
+  "Musik": "http://w3id.org/openeduhub/vocabs/discipline/420",
+  "Physik": "http://w3id.org/openeduhub/vocabs/discipline/460",
+  "Politik": "http://w3id.org/openeduhub/vocabs/discipline/480",
+  "Sport": "http://w3id.org/openeduhub/vocabs/discipline/600"
+}
