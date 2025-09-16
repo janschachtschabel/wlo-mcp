@@ -3,6 +3,10 @@ import { WLOCriterion, WLOSearchResponse } from '../types.js';
 
 const BASE_URL = process.env.WLO_BASE_URL || 'https://redaktion.openeduhub.net';
 
+export function getWloBaseUrl(): string {
+  return BASE_URL;
+}
+
 export interface NgSearchRequest {
   contentType: 'FILES' | 'FOLDERS';
   maxItems: number;
@@ -27,4 +31,13 @@ export async function ngSearch(req: NgSearchRequest): Promise<WLOSearchResponse>
     }
   });
   return data as WLOSearchResponse;
+}
+
+export async function getNodeMetadata(nodeId: string): Promise<any> {
+  const encoded = encodeURIComponent(nodeId);
+  const url = `${BASE_URL}/edu-sharing/rest/node/v1/nodes/${encoded}/metadata?propertyFilter=-all-`;
+  const { data } = await axios.get(url, {
+    headers: { 'Accept': 'application/json' }
+  });
+  return data;
 }

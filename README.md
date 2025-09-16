@@ -119,7 +119,7 @@ MCP-Client-Konfiguration (z. B. in einem Host, der Remote-HTTP unterstützt):
    - Modus „Remote HTTP“
    - URL: `https://<dein-projekt>.vercel.app/mcp` (oder direkt `https://<dein-projekt>.vercel.app/api/server`)
 2. Nach dem Connect sollten die Resources, Tools und der Prompt sichtbar sein:
-   - Tools: `search_content`, `parse_query`
+   - Tools: `search`, `fetch`, `search_content`, `parse_query`
    - Resources: `resource://filters/*`, `resource://prompts/map_nl_to_filters`
 3. Beispiel-Toolaufruf:
 
@@ -144,3 +144,41 @@ Bei unbekannten Labels bekommst du eine hilfreiche Fehlermeldung inklusive Liste
   - Docs: https://vercel.com/docs/mcp/deploy-mcp-servers-to-vercel#enabling-authorization
   - Idee: Protected Resource Metadata unter `/.well-known/oauth-protected-resource` + Token-Validierung (Authorization: Bearer).
 - API-Key-Header (X-Api-Key) ist möglich, wird aber von manchen Hosts nicht unterstützt (z. B. OpenAI UI). Deshalb derzeit deaktiviert.
+
+## OpenAI Connectors / Deep Research Kompatibilität
+
+OpenAI erwartet zwei Tools mit folgenden Formen:
+
+- `search`
+  - Input: `{ "query": string }`
+  - Output: Content mit genau einem Text-Item. Der Text ist ein JSON-String mit Struktur:
+    `{ "results": [{ "id": string, "title": string, "url": string }] }`
+  - Verhalten in diesem Server: Freitext wird intern mit `parse_query` heuristisch interpretiert (Fach, Bildungsstufe, Inhaltstyp – Quelle nur bei explizitem Wunsch) und dann deterministisch über `search_content` bei WLO gesucht. Ergebnisse werden auf `{id,title,url}` gemappt.
+
+- `fetch`
+  - Input: `{ "id": string }`
+  - Output: Content mit genau einem Text-Item. Der Text ist ein JSON-String mit Struktur:
+    `{ "id": string, "title": string, "text": string, "url": string, "metadata": object }`
+  - Verhalten in diesem Server: Holt Metadaten für die `id` vom WLO-Knoten. `text` wird aus gängigen Feldern (z. B. Beschreibung/Fächer/Lizenz) zusammengesetzt, `metadata` enthält die rohen Properties.
+
+Beispiel (search → Ergebnisform):
+
+```json
+{
+  "results": [
+    { "id": "abc-123", "title": "Kambodscha", "url": "https://redaktion.openeduhub.net/edu-sharing/components/render?nodeId=abc-123" }
+  ]
+}
+```
+
+Beispiel (fetch → Dokumentform):
+
+```json
+{
+  "id": "abc-123",
+  "title": "Kambodscha",
+  "text": "Beschreibung: ...\nFächer: ...\nLizenz: ...",
+  "url": "https://redaktion.openeduhub.net/edu-sharing/components/render?nodeId=abc-123",
+  "metadata": { "cclom:title": ["Kambodscha"], "ccm:license": ["CC-BY"], "...": ["..."] }
+}
+```
