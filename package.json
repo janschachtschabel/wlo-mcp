@@ -22,5 +22,8 @@
     "ts-node-dev": "latest",
     "@types/node": "latest",
     "tsx": "latest"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }
