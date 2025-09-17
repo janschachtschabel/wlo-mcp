@@ -48,6 +48,9 @@ const res = await searchContent({
   per_page: 10,
   content_type: 'FILES'
 });
+
+console.log(res.resolved_filters.subject?.uri); // → https://w3id.org/openeduhub/vocabs/subject/science
+console.log(res.criteria);
 ```
 
 Die Freitext-Parsing-Funktion (optional) in `src/tools/parse_query.ts`:
@@ -139,11 +142,17 @@ Bei unbekannten Labels bekommst du eine hilfreiche Fehlermeldung inklusive Liste
 
 ## Auth & Access Control
 
-- Aktuell: Keine Authentifizierung aktiviert. Der Endpoint ist ohne Header nutzbar (z. B. für OpenAI, das nur „None“ oder OAuth anbietet).
-- Wenn Auth benötigt wird, empfiehlt sich OAuth gemäß Vercel-Doku:
-  - Docs: https://vercel.com/docs/mcp/deploy-mcp-servers-to-vercel#enabling-authorization
-  - Idee: Protected Resource Metadata unter `/.well-known/oauth-protected-resource` + Token-Validierung (Authorization: Bearer).
-- API-Key-Header (X-Api-Key) ist möglich, wird aber von manchen Hosts nicht unterstützt (z. B. OpenAI UI). Deshalb derzeit deaktiviert.
+- Default: Ohne OAuth-Konfiguration ist der Endpoint öffentlich zugänglich (kompatibel mit OpenAI „None“ und Claude „Unauthenticated“).
+- Optional OAuth 2.0 (Bearer Tokens):
+  - Setze folgende Variablen (z. B. in den Vercel Project Settings):
+    - `OAUTH_ISSUER`
+    - `OAUTH_TOKEN_ENDPOINT`
+    - `OAUTH_JWKS_URL`
+    - Optional: `OAUTH_AUDIENCE` (expected `aud` Claim) und `OAUTH_AUTHORIZATION_SERVERS` (Komma-separiert für die Metadata-Ausgabe)
+  - Der Server validiert jedes `Authorization: Bearer <token>` gegen das entfernte JWKS. Ungültige Tokens führen zu `401` plus `WWW-Authenticate` Header.
+  - Metadata Endpoint: `/.well-known/oauth-protected-resource` (per `vercel.json` Rewrite → `api/.well-known/oauth-protected-resource.ts`).
+  - Unterstützte Signaturen: RS256/RS384/RS512 sowie PS256/PS384/PS512 (RSA-basierte Tokens gängiger OAuth-Anbieter).
+- Ein dedizierter API-Key-Header ist nicht nötig und würde von einigen Hosts ignoriert werden.
 
 ## OpenAI Connectors / Deep Research Kompatibilität
 
@@ -154,6 +163,7 @@ OpenAI erwartet zwei Tools mit folgenden Formen:
   - Output: Content mit genau einem Text-Item. Der Text ist ein JSON-String mit Struktur:
     `{ "results": [{ "id": string, "title": string, "url": string }] }`
   - Verhalten in diesem Server: Freitext wird intern mit `parse_query` heuristisch interpretiert (Fach, Bildungsstufe, Inhaltstyp – Quelle nur bei explizitem Wunsch) und dann deterministisch über `search_content` bei WLO gesucht. Ergebnisse werden auf `{id,title,url}` gemappt.
+  - Zusätzlich wird das Feld `resolved_filters` ausgegeben, welches zeigt, welche Label-zu-URI-Mappings verwendet wurden.
 
 - `fetch`
   - Input: `{ "id": string }`
