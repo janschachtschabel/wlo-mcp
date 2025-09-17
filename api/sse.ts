@@ -11,7 +11,7 @@ export default async function handler(req: any, res: any) {
   // Basic CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, mcp-session-id, Mcp-Session-Id');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, mcp-session-id, Mcp-Session-Id, Authorization, X-Api-Key');
   res.setHeader('Access-Control-Expose-Headers', 'Mcp-Session-Id');
 
   if (req.method === 'OPTIONS') {
