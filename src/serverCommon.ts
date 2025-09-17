@@ -4,8 +4,9 @@ import path from 'path';
 import { z } from 'zod';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { SearchContentSchema, SearchContentShape, searchContent } from './tools/search_content.js';
-import { getWloBaseUrl, getNodeMetadata } from './lib/wloClient.js';
+import { getNodeMetadata } from './lib/wloClient.js';
 import { parseQuery } from './tools/parse_query.js';
+import { buildDocumentFromMetadata, mapNodesToSearchResults } from './lib/results.js';
 
 function readText(relPath: string): string {
   const full = path.resolve(process.cwd(), relPath);
@@ -160,15 +161,8 @@ export function buildServer(): McpServer {
       if (p.media_type) args.media_type = p.media_type;
       if (p.source) args.source = p.source; // only when explicitly requested per heuristics
       const res = await searchContent(args);
-      const base = getWloBaseUrl();
-      const results = (res.nodes || []).map(node => {
-        const id = node.ref?.id || '';
-        const props = node.properties || {} as any;
-        const title = (props['cclom:title']?.[0]) || (props['cm:title']?.[0]) || (props['cm:name']?.[0]) || id;
-        const url = id ? `${base}/edu-sharing/components/render?nodeId=${encodeURIComponent(id)}` : base;
-        return { id, title, url };
-      });
-      const payload = { results };
+      const results = mapNodesToSearchResults(res.nodes || []);
+      const payload = { results, resolved_filters: res.resolved_filters };
       return { content: [{ type: 'text', text: JSON.stringify(payload) }] };
     }
   );
@@ -184,18 +178,8 @@ export function buildServer(): McpServer {
       inputSchema: { id: z.string().min(1) }
     },
     async ({ id }: { id: string }) => {
-      const base = getWloBaseUrl();
       const meta = await getNodeMetadata(id);
-      const props = (meta?.node?.properties) || {};
-      const title = (props['cclom:title']?.[0]) || (props['cm:title']?.[0]) || (props['cm:name']?.[0]) || id;
-      // Compose a text body from common descriptive fields if available
-      const desc = (props['cclom:general_description']?.[0]) || (props['cm:description']?.[0]) || '';
-      const subjects = (props['ccm:taxonidDisplay']?.join(', ')) || '';
-      const license = (props['ccm:license']?.[0]) || '';
-      const textParts = [desc && `Beschreibung: ${desc}`, subjects && `Fächer: ${subjects}`, license && `Lizenz: ${license}`].filter(Boolean);
-      const text = textParts.length ? textParts.join('\n') : JSON.stringify(props, null, 2);
-      const url = `${base}/edu-sharing/components/render?nodeId=${encodeURIComponent(id)}`;
-      const document = { id, title, text, url, metadata: props };
+      const document = buildDocumentFromMetadata(id, meta);
       return { content: [{ type: 'text', text: JSON.stringify(document) }] };
     }
   );

@@ -31,3 +31,23 @@ export interface WLOSearchResponseNode {
 export interface WLOSearchResponse {
   nodes: WLOSearchResponseNode[];
 }
+
+export interface SearchContentResolvedFilter {
+  label: string;
+  property: string;
+  value: string;
+}
+
+export interface SearchContentResolvedFilters {
+  subject?: SearchContentResolvedFilter;
+  educational_context?: SearchContentResolvedFilter;
+  media_type?: SearchContentResolvedFilter;
+  source?: SearchContentResolvedFilter;
+}
+
+export interface SearchContentResult extends WLOSearchResponse {
+  page: number;
+  per_page: number;
+  criteria: WLOCriterion[];
+  resolved_filters: SearchContentResolvedFilters;
+}
