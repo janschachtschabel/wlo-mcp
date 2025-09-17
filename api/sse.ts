@@ -3,7 +3,7 @@ import { buildServer } from '../src/serverCommon.js';
 import { ensureAuthorized, AuthError } from '../src/lib/auth.js';
 
 export const config = {
-  runtime: 'nodejs20.x',
+  runtime: 'nodejs',
   supportsResponseStreaming: true
 };
 
