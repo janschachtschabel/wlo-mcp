@@ -1,5 +1,11 @@
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { buildServer } from '../src/serverCommon.js';
+import { ensureAuthorized, AuthError } from '../src/lib/auth.js';
+
+export const config = {
+  runtime: 'nodejs20.x',
+  supportsResponseStreaming: true
+};
 
 export default async function handler(req: any, res: any) {
   // Basic CORS
@@ -19,6 +25,8 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
+    await ensureAuthorized(req);
+
     // Stateless: new transport/server per request
     const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
     const server = buildServer();
@@ -26,6 +34,15 @@ export default async function handler(req: any, res: any) {
     await server.connect(transport);
     await transport.handleRequest(req, res);
   } catch (error) {
+    if (error instanceof AuthError) {
+      res.setHeader('WWW-Authenticate', 'Bearer realm="wlo-mcp"');
+      res.status(error.status).json({
+        jsonrpc: '2.0',
+        error: { code: -32001, message: error.message, data: { code: error.code } },
+        id: null
+      });
+      return;
+    }
     console.error('MCP Handler Error:', error);
     res.status(500).json({
       jsonrpc: '2.0',

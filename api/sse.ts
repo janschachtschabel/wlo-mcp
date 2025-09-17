@@ -1,5 +1,11 @@
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import { buildServer } from '../src/serverCommon.js';
+import { ensureAuthorized, AuthError } from '../src/lib/auth.js';
+
+export const config = {
+  runtime: 'nodejs20.x',
+  supportsResponseStreaming: true
+};
 
 export default async function handler(req: any, res: any) {
   // Basic CORS
@@ -19,12 +25,22 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
+    await ensureAuthorized(req);
     const transport = new SSEServerTransport();
     const server = buildServer();
 
     await server.connect(transport);
     await transport.handleRequest(req, res);
   } catch (error) {
+    if (error instanceof AuthError) {
+      res.setHeader('WWW-Authenticate', 'Bearer realm="wlo-mcp"');
+      res.status(error.status).json({
+        jsonrpc: '2.0',
+        error: { code: -32001, message: error.message, data: { code: error.code } },
+        id: null
+      });
+      return;
+    }
     console.error('MCP SSE Handler Error:', error);
     res.status(500).json({
       jsonrpc: '2.0',

@@ -2,6 +2,7 @@ import axios from 'axios';
 import { WLOCriterion, WLOSearchResponse } from '../types.js';
 
 const BASE_URL = process.env.WLO_BASE_URL || 'https://redaktion.openeduhub.net';
+const USER_AGENT = process.env.MCP_USER_AGENT || 'wlo-mcp/0.1 (+https://wirlernenonline.de)';
 
 export function getWloBaseUrl(): string {
   return BASE_URL;
@@ -27,7 +28,8 @@ export async function ngSearch(req: NgSearchRequest): Promise<WLOSearchResponse>
   const { data } = await axios.post(url, { criteria: req.criteria }, {
     headers: {
       'Accept': 'application/json',
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      'User-Agent': USER_AGENT
     }
   });
   return data as WLOSearchResponse;
@@ -37,7 +39,10 @@ export async function getNodeMetadata(nodeId: string): Promise<any> {
   const encoded = encodeURIComponent(nodeId);
   const url = `${BASE_URL}/edu-sharing/rest/node/v1/nodes/${encoded}/metadata?propertyFilter=-all-`;
   const { data } = await axios.get(url, {
-    headers: { 'Accept': 'application/json' }
+    headers: {
+      'Accept': 'application/json',
+      'User-Agent': USER_AGENT
+    }
   });
   return data;
 }
