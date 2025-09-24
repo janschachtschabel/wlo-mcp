@@ -1,0 +1,40 @@
+Überblick
+Der Server wird auf Vercel unter /mcp bereitgestellt (Rewrite nach api/server) und ist so für Remote-HTTP-MCP-Clients erreichbar, z. B. ChatGPT oder den MCP Inspector.
+
+Ohne OAuth-Konfiguration ist der Endpoint öffentlich; sobald die OAuth-Variablen gesetzt sind, müssen alle Aufrufe ein gültiges Authorization: Bearer <token>-Headerfeld mitbringen, andernfalls beantwortet der Handler die Anfrage mit 401 und WWW-Authenticate.
+
+OAuth-Konfiguration vorbereiten
+Richte in deinem OAuth‑ oder OpenID-Provider (z. B. Auth0, Keycloak, Azure AD) eine Resource/API für den MCP-Endpunkt ein und entscheide, welche Flows (Authorization Code mit PKCE, Client Credentials etc.) du unterstützen willst. Verwende RSA-basierte Signaturverfahren (RS256/RS384/RS512 bzw. PS256/PS384/PS512), weil der Server ausschließlich diese Algorithmen akzeptiert.
+
+Trage die folgenden Umgebungsvariablen im Deployment (z. B. in den Vercel Project Settings) ein: OAUTH_ISSUER, OAUTH_TOKEN_ENDPOINT, OAUTH_JWKS_URL sowie optional OAUTH_AUDIENCE und OAUTH_AUTHORIZATION_SERVERS. Die Werte werden beim Start gelesen und steuern sowohl die Tokenprüfung als auch die Metadaten-Ausgabe.
+
+Der Server lädt und cached das JWKS vom angegebenen OAUTH_JWKS_URL, sucht den passenden Key (per kid oder einziges Key) und prüft Signatur, Ablauf (exp), Aktivierungszeit (nbf), iss sowie optional aud gegen die gesetzten Variablen. Falsche oder abgelaufene Tokens führen zu einer 401-Antwort.
+
+Überprüfe nach dem Deployment den Metadata-Endpunkt https://<deine-domain>/.well-known/oauth-protected-resource. Er liefert die eingetragenen Werte (issuer, token_endpoint, jwks_uri, optionale authorization_servers und resource) und kann von Clients zur automatischen OAuth-Konfiguration genutzt werden.
+
+Logins und Token-Ausstellung
+Erstelle in deinem OAuth-Provider Benutzerkonten bzw. verbinde ein Verzeichnis, damit sich Nutzer authentifizieren können. Registriere eine Client-Applikation, die die gewählten Flows unterstützt (z. B. Authorization Code mit PKCE für interaktive Logins).
+
+Stelle sicher, dass ausgegebene Tokens:
+
+Vom hinterlegten issuer stammen und – falls gesetzt – den gewünschten audience-Wert enthalten, da der Server beide Claims strikt prüft.
+
+Ein gültiges Ablaufdatum (exp) und gegebenenfalls ein nbf im Rahmen der ±60 s Toleranz besitzen.
+
+Mit einem der unterstützten RSA-Algorithmen signiert sind.
+
+Trage bei OAUTH_AUTHORIZATION_SERVERS die Autorisierungsendpunkte deines Providers (Komma-separiert) ein. Diese URLs werden in den Metadaten ausgeliefert, damit Clients wie ChatGPT ihren Login-Dialog auf den richtigen Authorization Server lenken können.
+
+Verwende OAUTH_AUDIENCE, um optional die gewünschte Resource-ID zu kommunizieren; sie wird ebenfalls in den Metadaten ausgegeben und vom Server bei der Tokenprüfung erwartet.
+
+Nutzung in ChatGPT
+Aktiviere in ChatGPT (Settings → Tools → Model Context Protocol) das Hinzufügen eines eigenen MCP-Servers und gib als Basis-URL https://<dein-projekt>.vercel.app/mcp an; der Transport ist „Streamable HTTP“ und entspricht dem angebotenen Endpoint.
+
+Beim Verbindungsaufbau ruft ChatGPT den Metadata-Endpunkt auf; hinterlegte authorization_servers sorgen dafür, dass der Nutzer dort sein OAuth-Login durchführen kann. Nach erfolgreicher Authentifizierung hängt ChatGPT das erhaltene Access Token automatisch als Authorization: Bearer an jede Anfrage an, welche der Server per ensureAuthorized validiert.
+
+ChatGPT erwartet die Tools search (Freitextsuche) und fetch (Dokumentabruf); beide werden vom Server in der kompatiblen Form bereitgestellt. Damit kann ChatGPT nach dem Login direkt Suchanfragen stellen und Ressourcen abrufen.
+
+Teste die Integration mit dem MCP Inspector, bevor du sie ChatGPT zur Verfügung stellst; die gleiche Remote-HTTP-Konfiguration funktioniert dort bereits ohne Anpassungen.
+
+Tests
+Tests wurden nicht ausgeführt (reine Dokumentations- und Konfigurationsbeschreibung).

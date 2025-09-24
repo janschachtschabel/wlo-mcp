@@ -2,8 +2,8 @@
 
 Deterministische Kernlogik und Ressourcen für einen MCP-Server, der Inhalte von WirLernenOnline (WLO) via ngsearch abfragt. Dieses Scaffold enthält:
 
-- search_content Kernfunktion (Mapping Label -> WLO-URIs, Paginierung, Request-Aufbau)
-- parse_query Heuristiken (optional) für Freitext zu Parametervorschlägen
+- MCP-Tool `search` (implementiert durch `searchContent` in `src/tools/search_content.ts`)
+- MCP-Tool `fetch` (implementiert durch `parseQuery` in `src/tools/parse_query.ts`)
 - Ressourcen (Subjects, Bildungsstufen, Inhaltstypen, Licenses) als JSON
 - Prompt-Ressource `resource://prompts/map_nl_to_filters`
 
@@ -34,7 +34,7 @@ WLO_BASE_URL=https://redaktion.openeduhub.net
 
 ## Kern-API (Programmatic)
 
-Die Suchfunktion befindet sich in `src/tools/search_content.ts`:
+Die deterministische Suchfunktion befindet sich in `src/tools/search_content.ts` und wird als MCP-Tool `search` registriert:
 
 ```ts
 import { searchContent } from './tools/search_content';
@@ -53,7 +53,7 @@ console.log(res.resolved_filters.subject?.uri); // → https://w3id.org/openeduh
 console.log(res.criteria);
 ```
 
-Die Freitext-Parsing-Funktion (optional) in `src/tools/parse_query.ts`:
+Die Freitext-Parsing-Funktion (optional) in `src/tools/parse_query.ts` wird als MCP-Tool `fetch` registriert:
 
 ```ts
 import { parseQuery } from './tools/parse_query';
@@ -72,7 +72,7 @@ console.log(out.suggested_params, out.confidence, out.notes);
 
 ## Nächste Schritte (MCP + Vercel)
 
-- MCP-Tools registrieren: `search_content` (deterministisch) und optional `parse_query`.
+- MCP-Tools registrieren: `search` (deterministische Suche) und optional `fetch` (Freitext → Parameter).
 - Resource-Pfade als `resource://filters/*.json` und `resource://prompts/map_nl_to_filters` veröffentlichen.
 - HTTP/SSE-Transport für Serverless (Vercel) hinzufügen (API-Route `api/server.ts`).
 - CORS/Security und optional Auth.
@@ -122,7 +122,7 @@ MCP-Client-Konfiguration (z. B. in einem Host, der Remote-HTTP unterstützt):
    - Modus „Remote HTTP“
    - URL: `https://<dein-projekt>.vercel.app/mcp` (oder direkt `https://<dein-projekt>.vercel.app/api/server`)
 2. Nach dem Connect sollten die Resources, Tools und der Prompt sichtbar sein:
-   - Tools: `search`, `fetch`, `search_content`, `parse_query`
+   - Tools: `search`, `fetch`
    - Resources: `resource://filters/*`, `resource://prompts/map_nl_to_filters`
 3. Beispiel-Toolaufruf:
 
@@ -156,7 +156,7 @@ Bei unbekannten Labels bekommst du eine hilfreiche Fehlermeldung inklusive Liste
 
 ## OpenAI Connectors / Deep Research Kompatibilität
 
-OpenAI erwartet zwei Tools mit folgenden Formen:
+OpenAI erwartet zwei Tools mit folgenden Formen (hier direkt umgesetzt):
 
 - `search`
   - Input: `{ "query": string }`
@@ -166,10 +166,10 @@ OpenAI erwartet zwei Tools mit folgenden Formen:
   - Zusätzlich wird das Feld `resolved_filters` ausgegeben, welches zeigt, welche Label-zu-URI-Mappings verwendet wurden.
 
 - `fetch`
-  - Input: `{ "id": string }`
+  - Input: `{ "query_text": string }`
   - Output: Content mit genau einem Text-Item. Der Text ist ein JSON-String mit Struktur:
-    `{ "id": string, "title": string, "text": string, "url": string, "metadata": object }`
-  - Verhalten in diesem Server: Holt Metadaten für die `id` vom WLO-Knoten. `text` wird aus gängigen Feldern (z. B. Beschreibung/Fächer/Lizenz) zusammengesetzt, `metadata` enthält die rohen Properties.
+    `{ "suggested_params": object, "confidence": number, "notes": string }`
+  - Verhalten in diesem Server: Analysiert Freitext und schlägt deterministische Parameter für `search` vor (inkl. Confidence & Notes).
 
 Beispiel (search → Ergebnisform):
 
