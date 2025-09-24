@@ -2,8 +2,10 @@
 
 Deterministische Kernlogik und Ressourcen für einen MCP-Server, der Inhalte von WirLernenOnline (WLO) via ngsearch abfragt. Dieses Scaffold enthält:
 
-- MCP-Tool `search` (implementiert durch `searchContent` in `src/tools/search_content.ts`)
-- MCP-Tool `fetch` (implementiert durch `parseQuery` in `src/tools/parse_query.ts`)
+- MCP-Tool `search` (Freitext → Ergebnisliste; nutzt intern `searchContent` und `parseQuery`)
+- MCP-Tool `fetch` (Dokumentabruf via `buildDocumentFromMetadata`)
+- MCP-Tool `search_content` (deterministische Parameter → Vollergebnisset)
+- MCP-Tool `parse_query` (Freitext → Parametervorschlag)
 - Ressourcen (Subjects, Bildungsstufen, Inhaltstypen, Licenses) als JSON
 - Prompt-Ressource `resource://prompts/map_nl_to_filters`
 
@@ -34,7 +36,7 @@ WLO_BASE_URL=https://redaktion.openeduhub.net
 
 ## Kern-API (Programmatic)
 
-Die deterministische Suchfunktion befindet sich in `src/tools/search_content.ts` und wird als MCP-Tool `search` registriert:
+Die deterministische Suchfunktion befindet sich in `src/tools/search_content.ts` und steht als MCP-Tool `search_content` bereit. Das Hosted-Tool `search` ruft diese Funktion intern nach heuristischer Parameterermittlung auf:
 
 ```ts
 import { searchContent } from './tools/search_content';
@@ -53,7 +55,7 @@ console.log(res.resolved_filters.subject?.uri); // → https://w3id.org/openeduh
 console.log(res.criteria);
 ```
 
-Die Freitext-Parsing-Funktion (optional) in `src/tools/parse_query.ts` wird als MCP-Tool `fetch` registriert:
+Die Freitext-Parsing-Funktion (optional) in `src/tools/parse_query.ts` ist als MCP-Tool `parse_query` verfügbar und wird außerdem intern von `search` genutzt:
 
 ```ts
 import { parseQuery } from './tools/parse_query';
@@ -72,7 +74,7 @@ console.log(out.suggested_params, out.confidence, out.notes);
 
 ## Nächste Schritte (MCP + Vercel)
 
-- MCP-Tools registrieren: `search` (deterministische Suche) und optional `fetch` (Freitext → Parameter).
+- MCP-Tools registrieren: `search`, `fetch`, `search_content`, `parse_query`.
 - Resource-Pfade als `resource://filters/*.json` und `resource://prompts/map_nl_to_filters` veröffentlichen.
 - HTTP/SSE-Transport für Serverless (Vercel) hinzufügen (API-Route `api/server.ts`).
 - CORS/Security und optional Auth.
@@ -122,7 +124,7 @@ MCP-Client-Konfiguration (z. B. in einem Host, der Remote-HTTP unterstützt):
    - Modus „Remote HTTP“
    - URL: `https://<dein-projekt>.vercel.app/mcp` (oder direkt `https://<dein-projekt>.vercel.app/api/server`)
 2. Nach dem Connect sollten die Resources, Tools und der Prompt sichtbar sein:
-   - Tools: `search`, `fetch`
+   - Tools: `search`, `fetch`, `search_content`, `parse_query`
    - Resources: `resource://filters/*`, `resource://prompts/map_nl_to_filters`
 3. Beispiel-Toolaufruf:
 
@@ -166,10 +168,20 @@ OpenAI erwartet zwei Tools mit folgenden Formen (hier direkt umgesetzt):
   - Zusätzlich wird das Feld `resolved_filters` ausgegeben, welches zeigt, welche Label-zu-URI-Mappings verwendet wurden.
 
 - `fetch`
-  - Input: `{ "query_text": string }`
+  - Input: `{ "id": string }`
   - Output: Content mit genau einem Text-Item. Der Text ist ein JSON-String mit Struktur:
-    `{ "suggested_params": object, "confidence": number, "notes": string }`
-  - Verhalten in diesem Server: Analysiert Freitext und schlägt deterministische Parameter für `search` vor (inkl. Confidence & Notes).
+    `{ "id": string, "title": string, "text": string, "url": string, "metadata": object }`
+  - Verhalten in diesem Server: Lädt Metadaten für einen WLO-Knoten und bereitet sie als Dokument payload auf.
+
+- `search_content`
+  - Input: `{ "q"?: string, "subject"?: string, ... }` (siehe `src/tools/search_content.ts`)
+  - Output: Vollständige ngsearch-Antwort inkl. `resolved_filters`, `criteria`, Paginierung.
+  - Verwendung: Für deterministische Aufrufe (z. B. Claude-Workflows, Power-User oder Tests).
+
+- `parse_query`
+  - Input: `{ "query_text": string }`
+  - Output: `{ "suggested_params": object, "confidence": number, "notes": string }`
+  - Verwendung: Direkter Zugriff auf die Freitext-Heuristiken; wird von `search` intern bereits genutzt.
 
 Beispiel (search → Ergebnisform):
 

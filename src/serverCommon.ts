@@ -3,8 +3,10 @@ import fs from 'fs';
 import path from 'path';
 import { z } from 'zod';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { SearchContentShape, searchContent } from './tools/search_content.js';
+import { SearchContentSchema, SearchContentShape, searchContent } from './tools/search_content.js';
 import { parseQuery } from './tools/parse_query.js';
+import { getNodeMetadata } from './lib/wloClient.js';
+import { buildDocumentFromMetadata, mapNodesToSearchResults } from './lib/results.js';
 
 function readText(relPath: string): string {
   const full = path.resolve(process.cwd(), relPath);
@@ -98,38 +100,88 @@ export function buildServer(): McpServer {
     })
   );
 
-  // Tool: search (vormals search_content)
+  const SearchToolInput = z.object({ query: z.string().min(1) });
+  const FetchToolInput = z.object({ id: z.string().min(1) });
+
+  // Tool: search (OpenAI/Claude compatible)
   server.registerTool(
     'search',
     {
-      title: 'WLO Suche (deterministisch)',
-      description: 'Sucht Inhalte oder Sammlungen bei WirLernenOnline anhand strukturierter Parameter. Lehnt unbekannte Labels ab und liefert zulässige Alternativen.',
-      inputSchema: SearchContentShape
+      title: 'WLO Suche (Freitext → Ergebnisse)',
+      description: 'Akzeptiert Freitext, mappt ihn heuristisch auf WLO-Filter und liefert eine Ergebnisliste (id/title/url).',
+      inputSchema: SearchToolInput.shape
     },
-    async (args: unknown) => {
-      const res = await searchContent(args as any);
+    async ({ query }: { query: string }) => {
+      const parsed = parseQuery({ query_text: query });
+      const suggested = parsed.suggested_params ?? {};
+      const args = {
+        ...suggested,
+        q: suggested.q ?? query,
+        page: suggested.page ?? 1,
+        per_page: Math.min(suggested.per_page ?? 10, 20),
+        content_type: suggested.content_type ?? 'FILES'
+      } as Record<string, unknown>;
+
+      const res = await searchContent(args);
+      const results = mapNodesToSearchResults(res.nodes ?? []);
+      const payload = {
+        results,
+        resolved_filters: res.resolved_filters,
+        total_results: res.nodes?.length ?? 0
+      };
+
       return {
-        content: [
-          { type: 'text', text: JSON.stringify(res, null, 2) }
-        ]
+        content: [{ type: 'text', text: JSON.stringify(payload) }]
       };
     }
   );
 
-  // Tool: fetch (vormals parse_query)
+  // Tool: fetch (OpenAI/Claude compatible)
   server.registerTool(
     'fetch',
     {
-      title: 'Freitext → Parametervorschlag',
-      description: 'Analysiert eine Freitext-Anfrage und schlägt deterministische Suchparameter vor (inklusive confidence & notes).',
+      title: 'WLO Dokument abrufen',
+      description: 'Liefert Titel, Text, URL und Metadaten eines WLO-Knotens basierend auf seiner ID.',
+      inputSchema: FetchToolInput.shape
+    },
+    async ({ id }: { id: string }) => {
+      const metadata = await getNodeMetadata(id);
+      const document = buildDocumentFromMetadata(id, metadata);
+      return {
+        content: [{ type: 'text', text: JSON.stringify(document) }]
+      };
+    }
+  );
+
+  // Optional Expert Tool: search_content (deterministic Parameter)
+  server.registerTool(
+    'search_content',
+    {
+      title: 'WLO Suche (strukturierte Parameter)',
+      description: 'Deterministische Suche mit exakt definierten Parametern (q/subject/educational_context/media_type/source/page/per_page/content_type).',
+      inputSchema: SearchContentShape
+    },
+    async (args: unknown) => {
+      const params = SearchContentSchema.parse(args);
+      const res = await searchContent(params);
+      return {
+        content: [{ type: 'text', text: JSON.stringify(res, null, 2) }]
+      };
+    }
+  );
+
+  // Optional Helper: parse_query (Freitext → Parametervorschlag)
+  server.registerTool(
+    'parse_query',
+    {
+      title: 'Freitext → Parameterheuristik',
+      description: 'Analysiert Freitext und schlägt Parameter für `search_content` vor (liefert confidence & notes).',
       inputSchema: { query_text: z.string().min(1) }
     },
     async ({ query_text }: { query_text: string }) => {
       const out = parseQuery({ query_text });
       return {
-        content: [
-          { type: 'text', text: JSON.stringify(out, null, 2) }
-        ]
+        content: [{ type: 'text', text: JSON.stringify(out, null, 2) }]
       };
     }
   );
