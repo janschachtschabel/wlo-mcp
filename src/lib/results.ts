@@ -58,11 +58,14 @@ export interface MinimalSearchResult {
 export function mapNodesToSearchResults(nodes: WLOSearchResponseNode[]): MinimalSearchResult[] {
   const results: MinimalSearchResult[] = [];
   for (const node of nodes) {
-    const id = node.ref?.id;
-    if (!id) continue;
     const props = node.properties ?? {};
-    const title = resolveTitle(props, id);
-    results.push({ id, title, url: buildNodeUrl(id) });
+    const uuid = firstNonEmptyValue(props, 'sys:node-uuid') ?? node.ref?.id;
+    if (!uuid) continue;
+    const title = resolveTitle(props, uuid);
+    const permalink = firstNonEmptyValue(props, 'virtual:permalink');
+    const wwwUrl = firstNonEmptyValue(props, 'ccm:wwwurl');
+    const url = permalink ?? wwwUrl ?? buildNodeUrl(uuid);
+    results.push({ id: uuid, title, url });
   }
   return results;
 }
@@ -78,7 +81,10 @@ export interface DocumentResult {
 export function buildDocumentFromMetadata(nodeId: string, metadata: any): DocumentResult {
   const props: Record<string, string[] | undefined> = metadata?.node?.properties ?? metadata?.properties ?? {};
 
-  const title = resolveTitle(props, nodeId);
+  const nodeRefId = metadata?.node?.ref?.id;
+  const nodeUuid = firstNonEmptyValue(props, 'sys:node-uuid') ?? nodeRefId ?? nodeId;
+
+  const title = resolveTitle(props, nodeUuid);
   const description = resolveDescription(props);
   const subjects = joinValues(props['ccm:taxonidDisplay']);
   const license = firstNonEmptyValue(props, 'ccm:license');
@@ -95,11 +101,21 @@ export function buildDocumentFromMetadata(nodeId: string, metadata: any): Docume
 
   const text = textParts.length ? textParts.join('\n') : JSON.stringify(props, null, 2);
 
+  const permalink = firstNonEmptyValue(props, 'virtual:permalink');
+  const wwwUrl = firstNonEmptyValue(props, 'ccm:wwwurl');
+  const primaryUrl = permalink ?? wwwUrl ?? buildNodeUrl(nodeUuid);
+
+  const metadataRecord: Record<string, string[] | undefined> = { ...props };
+  metadataRecord['resolved:node-uuid'] = [nodeUuid];
+  if (nodeRefId) metadataRecord['resolved:node-ref'] = [nodeRefId];
+  if (permalink) metadataRecord['resolved:permalink'] = [permalink];
+  if (wwwUrl) metadataRecord['resolved:source-url'] = [wwwUrl];
+
   return {
-    id: nodeId,
+    id: nodeUuid,
     title,
     text,
-    url: buildNodeUrl(nodeId),
-    metadata: props
+    url: primaryUrl,
+    metadata: metadataRecord
   };
 }

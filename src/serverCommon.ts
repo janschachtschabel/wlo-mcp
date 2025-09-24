@@ -107,8 +107,8 @@ export function buildServer(): McpServer {
   server.registerTool(
     'search',
     {
-      title: 'WLO Suche (Freitext → Ergebnisse)',
-      description: 'Akzeptiert Freitext, mappt ihn heuristisch auf WLO-Filter und liefert eine Ergebnisliste (id/title/url).',
+      title: 'WLO-Bildungsressourcen suchen (Freitext → Trefferliste)',
+      description: 'Akzeptiert Freitext, übersetzt ihn in WirLernenOnline-Filter und liefert eine priorisierte Liste von Bildungsressourcen (id/title/url).',
       inputSchema: SearchToolInput.shape
     },
     async ({ query }: { query: string }) => {
@@ -140,8 +140,8 @@ export function buildServer(): McpServer {
   server.registerTool(
     'fetch',
     {
-      title: 'WLO Dokument abrufen',
-      description: 'Liefert Titel, Text, URL und Metadaten eines WLO-Knotens basierend auf seiner ID.',
+      title: 'WLO-Bildungsressource abrufen',
+      description: 'Gibt die vollständige Darstellung einer Bildungsressource (Titel, aufbereiteter Text, URL, Metadaten) anhand ihrer WLO-ID zurück.',
       inputSchema: FetchToolInput.shape
     },
     async ({ id }: { id: string }) => {
@@ -153,12 +153,12 @@ export function buildServer(): McpServer {
     }
   );
 
-  // Optional Expert Tool: search_content (deterministic Parameter)
+  // Optional Expert Tool: search_content (deterministische Parameter)
   server.registerTool(
     'search_content',
     {
-      title: 'WLO Suche (strukturierte Parameter)',
-      description: 'Deterministische Suche mit exakt definierten Parametern (q/subject/educational_context/media_type/source/page/per_page/content_type).',
+      title: 'WLO-Bildungsressourcen suchen (strukturierte Parameter)',
+      description: 'Deterministische Suche nach Bildungsressourcen mit exakt definierten Parametern (q/subject/educational_context/media_type/source/page/per_page/content_type).',
       inputSchema: SearchContentShape
     },
     async (args: unknown) => {
@@ -174,8 +174,8 @@ export function buildServer(): McpServer {
   server.registerTool(
     'parse_query',
     {
-      title: 'Freitext → Parameterheuristik',
-      description: 'Analysiert Freitext und schlägt Parameter für `search_content` vor (liefert confidence & notes).',
+      title: 'Freitext → Bildungsressourcen-Parameterheuristik',
+      description: 'Interpretierendes Mapping von Freitext auf mögliche WLO-Filter (mit confidence & notes) zur Suche nach Bildungsinhalten.',
       inputSchema: { query_text: z.string().min(1) }
     },
     async ({ query_text }: { query_text: string }) => {

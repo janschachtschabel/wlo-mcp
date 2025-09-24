@@ -36,7 +36,8 @@ export async function ngSearch(req: NgSearchRequest): Promise<WLOSearchResponse>
 }
 
 export async function getNodeMetadata(nodeId: string): Promise<any> {
-  const encoded = encodeURIComponent(nodeId);
+  const normalized = nodeId.includes('/') ? nodeId : `-home-/${nodeId}`;
+  const encoded = normalized.split('/').map(segment => encodeURIComponent(segment)).join('/');
   const url = `${BASE_URL}/edu-sharing/rest/node/v1/nodes/${encoded}/metadata?propertyFilter=-all-`;
   const { data } = await axios.get(url, {
     headers: {

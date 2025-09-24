@@ -2,10 +2,10 @@
 
 Deterministische Kernlogik und Ressourcen für einen MCP-Server, der Inhalte von WirLernenOnline (WLO) via ngsearch abfragt. Dieses Scaffold enthält:
 
-- MCP-Tool `search` (Freitext → Ergebnisliste; nutzt intern `searchContent` und `parseQuery`)
-- MCP-Tool `fetch` (Dokumentabruf via `buildDocumentFromMetadata`)
-- MCP-Tool `search_content` (deterministische Parameter → Vollergebnisset)
-- MCP-Tool `parse_query` (Freitext → Parametervorschlag)
+- MCP-Tool `search` (Freitext → Trefferliste von Bildungsressourcen; nutzt intern `searchContent` und `parseQuery`)
+- MCP-Tool `fetch` (vollständiger Bildungsressourcen-Abruf via `buildDocumentFromMetadata`)
+- MCP-Tool `search_content` (deterministische Parameter → vollständiges Bildungsressourcen-Ergebnis)
+- MCP-Tool `parse_query` (Freitext → Parameterheuristik für Bildungsinhalte)
 - Ressourcen (Subjects, Bildungsstufen, Inhaltstypen, Licenses) als JSON
 - Prompt-Ressource `resource://prompts/map_nl_to_filters`
 
@@ -36,7 +36,7 @@ WLO_BASE_URL=https://redaktion.openeduhub.net
 
 ## Kern-API (Programmatic)
 
-Die deterministische Suchfunktion befindet sich in `src/tools/search_content.ts` und steht als MCP-Tool `search_content` bereit. Das Hosted-Tool `search` ruft diese Funktion intern nach heuristischer Parameterermittlung auf:
+Die deterministische Suchfunktion befindet sich in `src/tools/search_content.ts` und steht als MCP-Tool `search_content` bereit. Das gehostete Tool `search` ruft diese Funktion intern nach heuristischer Parameterermittlung auf, um Bildungsressourcen zu finden:
 
 ```ts
 import { searchContent } from './tools/search_content';
@@ -55,7 +55,7 @@ console.log(res.resolved_filters.subject?.uri); // → https://w3id.org/openeduh
 console.log(res.criteria);
 ```
 
-Die Freitext-Parsing-Funktion (optional) in `src/tools/parse_query.ts` ist als MCP-Tool `parse_query` verfügbar und wird außerdem intern von `search` genutzt:
+Die Freitext-Parsing-Funktion (optional) in `src/tools/parse_query.ts` ist als MCP-Tool `parse_query` verfügbar und unterstützt `search` beim Ableiten von Bildungsressourcen-Filtern:
 
 ```ts
 import { parseQuery } from './tools/parse_query';
@@ -74,7 +74,7 @@ console.log(out.suggested_params, out.confidence, out.notes);
 
 ## Nächste Schritte (MCP + Vercel)
 
-- MCP-Tools registrieren: `search`, `fetch`, `search_content`, `parse_query`.
+- MCP-Tools registrieren: `search`, `fetch`, `search_content`, `parse_query` (alle auf Bildungsinhalte ausgelegt).
 - Resource-Pfade als `resource://filters/*.json` und `resource://prompts/map_nl_to_filters` veröffentlichen.
 - HTTP/SSE-Transport für Serverless (Vercel) hinzufügen (API-Route `api/server.ts`).
 - CORS/Security und optional Auth.
@@ -164,14 +164,14 @@ OpenAI erwartet zwei Tools mit folgenden Formen (hier direkt umgesetzt):
   - Input: `{ "query": string }`
   - Output: Content mit genau einem Text-Item. Der Text ist ein JSON-String mit Struktur:
     `{ "results": [{ "id": string, "title": string, "url": string }] }`
-  - Verhalten in diesem Server: Freitext wird intern mit `parse_query` heuristisch interpretiert (Fach, Bildungsstufe, Inhaltstyp – Quelle nur bei explizitem Wunsch) und dann deterministisch über `search_content` bei WLO gesucht. Ergebnisse werden auf `{id,title,url}` gemappt.
+  - Verhalten in diesem Server: Freitext wird intern mit `parse_query` heuristisch interpretiert (Fach, Bildungsstufe, Inhaltstyp – Quelle nur bei explizitem Wunsch) und dann deterministisch über `search_content` bei WLO gesucht. Treffer werden auf `{id,title,url}` gemappt, wobei `id` die kanonische `sys:node-uuid` der Bildungsressource darstellt.
   - Zusätzlich wird das Feld `resolved_filters` ausgegeben, welches zeigt, welche Label-zu-URI-Mappings verwendet wurden.
 
 - `fetch`
   - Input: `{ "id": string }`
   - Output: Content mit genau einem Text-Item. Der Text ist ein JSON-String mit Struktur:
     `{ "id": string, "title": string, "text": string, "url": string, "metadata": object }`
-  - Verhalten in diesem Server: Lädt Metadaten für einen WLO-Knoten und bereitet sie als Dokument payload auf.
+  - Verhalten in diesem Server: Lädt Metadaten für einen WLO-Knoten, nutzt `sys:node-uuid` als stabile ID, bevorzugt die offizielle Permalink-/www-URL und ergänzt das Metadatenobjekt um `resolved:*`-Felder (z. B. `resolved:node-uuid`, `resolved:permalink`).
 
 - `search_content`
   - Input: `{ "q"?: string, "subject"?: string, ... }` (siehe `src/tools/search_content.ts`)

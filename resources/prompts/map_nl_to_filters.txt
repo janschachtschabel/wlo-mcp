@@ -1,6 +1,6 @@
 Titel: map_nl_to_filters
 
-Aufgabe: Lies Nutzertext und befülle die Parameter für search_content so restriktiv wie möglich. Nutze ausschließlich Werte aus resource://filters/*. Wenn ein Wert unbekannt ist, lass das Feld weg statt zu raten.
+Aufgabe: Lies Nutzertext und befülle die Parameter für search_content so restriktiv wie möglich, damit gezielt Bildungsressourcen bei WirLernenOnline gefunden werden. Nutze ausschließlich Werte aus resource://filters/*. Wenn ein Wert unbekannt ist, lass das Feld weg statt zu raten.
 
 Hinweise:
 - Verwende exakte deutsche Labels aus den Resources (subjects.json, educational_contexts.json, media_types.json).
