@@ -26,11 +26,10 @@ export default async function handler(req: any, res: any) {
 
   try {
     await ensureAuthorized(req);
-    const transport = new SSEServerTransport();
+    const transport = new SSEServerTransport(req, res);
     const server = buildServer();
 
     await server.connect(transport);
-    await transport.handleRequest(req, res);
   } catch (error) {
     if (error instanceof AuthError) {
       res.setHeader('WWW-Authenticate', 'Bearer realm="wlo-mcp"');
