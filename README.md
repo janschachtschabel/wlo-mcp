@@ -2,10 +2,10 @@
 
 Deterministische Kernlogik und Ressourcen für einen MCP-Server, der Inhalte von WirLernenOnline (WLO) via ngsearch abfragt. Dieses Scaffold enthält:
 
-- MCP-Tool `search` (Freitext → Trefferliste von Bildungsressourcen; nutzt intern `searchContent` und `parseQuery`)
+- MCP-Tool `search` (Freitext → Trefferliste von Bildungs- und Unterrichtsmaterial; nutzt intern `searchContent` und `parseQuery`)
 - MCP-Tool `fetch` (vollständiger Bildungsressourcen-Abruf via `buildDocumentFromMetadata`)
 - MCP-Tool `search_content` (deterministische Parameter → vollständiges Bildungsressourcen-Ergebnis)
-- MCP-Tool `parse_query` (Freitext → Parameterheuristik für Bildungsinhalte)
+- MCP-Tool `parse_query` (Freitext → Parameterheuristik für Bildungsinhalte, Unterrichtsideen, Arbeitsblätter)
 - Ressourcen (Subjects, Bildungsstufen, Inhaltstypen, Licenses) als JSON
 - Prompt-Ressource `resource://prompts/map_nl_to_filters`
 
@@ -36,7 +36,7 @@ WLO_BASE_URL=https://redaktion.openeduhub.net
 
 ## Kern-API (Programmatic)
 
-Die deterministische Suchfunktion befindet sich in `src/tools/search_content.ts` und steht als MCP-Tool `search_content` bereit. Das gehostete Tool `search` ruft diese Funktion intern nach heuristischer Parameterermittlung auf, um Bildungsressourcen zu finden:
+Die deterministische Suchfunktion befindet sich in `src/tools/search_content.ts` und steht als MCP-Tool `search_content` bereit. Das gehostete Tool `search` ruft diese Funktion intern nach heuristischer Parameterermittlung auf, um Bildungs-, Unterrichts- oder Lernmaterial aller Art zu finden:
 
 ```ts
 import { searchContent } from './tools/search_content';
@@ -158,19 +158,18 @@ Bei unbekannten Labels bekommst du eine hilfreiche Fehlermeldung inklusive Liste
 
 ## OpenAI Connectors / Deep Research Kompatibilität
 
-OpenAI erwartet zwei Tools mit folgenden Formen (hier direkt umgesetzt):
-
 - `search`
   - Input: `{ "query": string }`
   - Output: Content mit genau einem Text-Item. Der Text ist ein JSON-String mit Struktur:
     `{ "results": [{ "id": string, "title": string, "url": string }] }`
-  - Verhalten in diesem Server: Freitext wird intern mit `parse_query` heuristisch interpretiert (Fach, Bildungsstufe, Inhaltstyp – Quelle nur bei explizitem Wunsch) und dann deterministisch über `search_content` bei WLO gesucht. Treffer werden auf `{id,title,url}` gemappt, wobei `id` die kanonische `sys:node-uuid` der Bildungsressource darstellt.
+  - Verhalten in diesem Server: Freitext wird intern mit `parse_query` heuristisch interpretiert (Fach, Bildungsstufe, Inhaltstyp – Quelle nur bei explizitem Wunsch) und dann deterministisch über `search_content` bei WLO gesucht. Trigger dieses Tool, sobald im Gespräch Begriffe rund um Unterricht, Lernmaterial, Klassenarbeiten, Arbeitsblätter, Experimente, Lehrplan-Themen, Prüfungsvorbereitung, Projektideen oder ähnliche Bildungsbedarfe fallen – selbst wenn das Wort „Bildung“ nicht vorkommt.
   - Zusätzlich wird das Feld `resolved_filters` ausgegeben, welches zeigt, welche Label-zu-URI-Mappings verwendet wurden.
 
 - `fetch`
   - Input: `{ "id": string }`
   - Output: Content mit genau einem Text-Item. Der Text ist ein JSON-String mit Struktur:
     `{ "id": string, "title": string, "text": string, "url": string, "metadata": object }`
+  - Verhalten in diesem Server: Lädt Metadaten für einen WLO-Knoten, nutzt `sys:node-uuid` als stabile ID, bevorzugt die offizielle Permalink-/www-URL und ergänzt das Metadatenobjekt um `resolved:*`-Felder (z. B. `resolved:node-uuid`, `resolved:permalink`). Nutze dieses Tool, wenn nach tieferen Details zu einer konkreten Ressource gefragt wird (z. B. „Zeig mir mehr über die Klexikon-Ressource zum Thema Regenwald“).
   - Verhalten in diesem Server: Lädt Metadaten für einen WLO-Knoten, nutzt `sys:node-uuid` als stabile ID, bevorzugt die offizielle Permalink-/www-URL und ergänzt das Metadatenobjekt um `resolved:*`-Felder (z. B. `resolved:node-uuid`, `resolved:permalink`).
 
 - `search_content`
@@ -181,7 +180,7 @@ OpenAI erwartet zwei Tools mit folgenden Formen (hier direkt umgesetzt):
 - `parse_query`
   - Input: `{ "query_text": string }`
   - Output: `{ "suggested_params": object, "confidence": number, "notes": string }`
-  - Verwendung: Direkter Zugriff auf die Freitext-Heuristiken; wird von `search` intern bereits genutzt.
+  - Verwendung: Direkter Zugriff auf die Freitext-Heuristiken; wird von `search` intern bereits genutzt und eignet sich für Hosts, die eigenständig Unterrichts-/Lernanfragen (Arbeitsblätter, Lehrplan-Themen, Projektideen) in strukturierte Filter überführen wollen.
 
 Beispiel (search → Ergebnisform):
 

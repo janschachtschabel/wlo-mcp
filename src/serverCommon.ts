@@ -107,8 +107,8 @@ export function buildServer(): McpServer {
   server.registerTool(
     'search',
     {
-      title: 'WLO-Bildungsressourcen suchen (Freitext → Trefferliste)',
-      description: 'Akzeptiert Freitext, übersetzt ihn in WirLernenOnline-Filter und liefert eine priorisierte Liste von Bildungsressourcen (id/title/url).',
+      title: 'Unterrichts- & Lernmaterial finden (WirLernenOnline)',
+      description: 'Nutze dieses Tool bei Fragen zu Unterricht, Lernen, Schulprojekten oder Lernunterlagen. Freitext (z. B. „Arbeitsblatt Bruchrechnung“, „Experimente für Grundschule“, „Unterrichtseinheit Klima“) wird in WLO-Filter übersetzt und liefert eine priorisierte Trefferliste von Bildungsressourcen (id/title/url).',
       inputSchema: SearchToolInput.shape
     },
     async ({ query }: { query: string }) => {
@@ -140,8 +140,8 @@ export function buildServer(): McpServer {
   server.registerTool(
     'fetch',
     {
-      title: 'WLO-Bildungsressource abrufen',
-      description: 'Gibt die vollständige Darstellung einer Bildungsressource (Titel, aufbereiteter Text, URL, Metadaten) anhand ihrer WLO-ID zurück.',
+      title: 'Details zu einer Bildungsressource abrufen (WirLernenOnline)',
+      description: 'Liefert die vollständige Beschreibung einer ausgewählten Unterrichts- oder Lernressource auf Basis ihrer WLO-ID (Titel, strukturierter Text, Permalink, Zusatzmetadaten inkl. resolved:* Hilfsfelder). Ideal nach einem `search`-Treffer.',
       inputSchema: FetchToolInput.shape
     },
     async ({ id }: { id: string }) => {
@@ -157,8 +157,8 @@ export function buildServer(): McpServer {
   server.registerTool(
     'search_content',
     {
-      title: 'WLO-Bildungsressourcen suchen (strukturierte Parameter)',
-      description: 'Deterministische Suche nach Bildungsressourcen mit exakt definierten Parametern (q/subject/educational_context/media_type/source/page/per_page/content_type).',
+      title: 'Unterrichts- & Lernmaterial gezielt abfragen (strukturierte Parameter)',
+      description: 'Für Hosts mit exakten Parametern: deterministische Suche nach Bildungsressourcen mit genau definierten Feldern (q/subject/educational_context/media_type/source/page/per_page/content_type).',
       inputSchema: SearchContentShape
     },
     async (args: unknown) => {
@@ -174,8 +174,8 @@ export function buildServer(): McpServer {
   server.registerTool(
     'parse_query',
     {
-      title: 'Freitext → Bildungsressourcen-Parameterheuristik',
-      description: 'Interpretierendes Mapping von Freitext auf mögliche WLO-Filter (mit confidence & notes) zur Suche nach Bildungsinhalten.',
+      title: 'Freitext zu Unterrichts-/Lernmaterial filtern',
+      description: 'Analysiert Lern- oder Unterrichtsanfragen (Arbeitsblätter, Projekte, Experimente, Lehrplanstufen) und schlägt passende WLO-Filter vor (inkl. confidence & notes) – wird intern von `search` genutzt, kann aber separat aufgerufen werden.',
       inputSchema: { query_text: z.string().min(1) }
     },
     async ({ query_text }: { query_text: string }) => {

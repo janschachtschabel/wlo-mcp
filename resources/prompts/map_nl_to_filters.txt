@@ -12,6 +12,7 @@ Hinweise:
   - source (freier Text) -> ccm:oeh_publisher_combined
  - Setze den Parameter 'source' nur, wenn die Quelle vom Nutzer explizit verlangt wird (z. B. "nur Klexikon", "Quelle: Klexikon", "von Klexikon").
 - Paginierung: page (ab 1), per_page (1..100). content_type: FILES|FOLDERS.
+- Synonyme bedenken: "Arbeitsblatt", "Klassenarbeit", "Projekt", "Unterrichtsidee", "Lernstation", "Übungsaufgaben", "Prüfungsvorbereitung" deuten auf Bildungsressourcen hin, auch ohne das Wort "Bildung".
 
 Beispiele:
 - "Mathe 5. Klasse offene Lizenz PDF" -> {
@@ -26,4 +27,9 @@ Beispiele:
     educational_context: "Sekundarstufe I",
     media_type: "Arbeitsblatt",
     source: "Klexikon"
+  }
+- "Unterrichtsmaterial Klimawandel Sek II Projekt" -> {
+    q: "Klimawandel",
+    educational_context: "Sekundarstufe II",
+    media_type: "Unterrichtseinheit"
   }
